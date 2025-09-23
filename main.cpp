@@ -1,9 +1,13 @@
-#include <SDL3/SDL.h>
+#include <SDL2/SDL.h>
 #include <iostream>
+
+#ifdef _WIN32
+#include <SDL2/SDL_main.h>
+#endif
 
 int main(int argc, char* argv[]) {
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
         return 1;
     }
@@ -11,9 +15,11 @@ int main(int argc, char* argv[]) {
     // Create window
     SDL_Window* window = SDL_CreateWindow(
         "Game Boy Emulator",                  // Window title
+        SDL_WINDOWPOS_CENTERED,               // Initial x position
+        SDL_WINDOWPOS_CENTERED,               // Initial y position
         640,                                  // Width
-        576,                                  // Height (using 9:8 aspect ratio similar to Game Boy)
-        SDL_WINDOW_OPENGL                     // Window flags
+        576,                                  // Height
+        SDL_WINDOW_SHOWN                      // Window flags
     );
 
     if (window == nullptr) {
@@ -23,7 +29,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Create renderer
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == nullptr) {
         std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
@@ -42,13 +48,13 @@ int main(int argc, char* argv[]) {
         // Handle events on queue
         while (SDL_PollEvent(&e) != 0) {
             // User requests quit
-            if (e.type == SDL_EVENT_QUIT) {
+            if (e.type == SDL_QUIT) {
                 quit = true;
             }
         }
 
         // Clear screen
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         
         // Update screen
