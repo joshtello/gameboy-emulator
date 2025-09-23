@@ -1,0 +1,23 @@
+# Build directory
+build/
+
+# SDL files (since these can be downloaded on each machine)
+SDL3.dll
+SDL3.lib
+
+# Visual Studio files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Compiled files
+*.exe
+*.obj
+*.pdb
