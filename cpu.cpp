@@ -111,3 +111,4 @@ void CPU::printFlags() const {
     std::cout << "Carry: " << (getCarryFlag() ? "1" : "0") << std::endl;
     std::cout << std::endl;
 }
+

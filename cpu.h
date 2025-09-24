@@ -96,3 +96,4 @@ public:
     void printRegisters() const;
     void printFlags() const;
 };
+
