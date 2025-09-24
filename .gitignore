@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Build directories
 build/
 Debug/
@@ -54,3 +55,28 @@ Thumbs.db
 SDL2.lib
 SDL2main.lib
 SDL2.dll
+=======
+# Build directory
+build/
+
+# SDL files (since these can be downloaded on each machine)
+SDL3.dll
+SDL3.lib
+
+# Visual Studio files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Compiled files
+*.exe
+*.obj
+*.pdb
+>>>>>>> 0ac8910690b61c2ab57e67f9d285d9d29c426d90

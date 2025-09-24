@@ -1,7 +1,10 @@
 #include <SDL2/SDL.h>
 #include <iostream>
+<<<<<<< HEAD
 #include "memory.h"
 #include "cpu.h"
+=======
+>>>>>>> 0ac8910690b61c2ab57e67f9d285d9d29c426d90
 
 #ifdef _WIN32
 #include <SDL2/SDL_main.h>
@@ -39,6 +42,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+<<<<<<< HEAD
     // Initialize Game Boy components
     Memory memory;
     CPU cpu(memory);
@@ -50,6 +54,8 @@ int main(int argc, char* argv[]) {
     cpu.printRegisters();
     cpu.printFlags();
 
+=======
+>>>>>>> 0ac8910690b61c2ab57e67f9d285d9d29c426d90
     // Main loop flag
     bool quit = false;
 
@@ -57,7 +63,10 @@ int main(int argc, char* argv[]) {
     SDL_Event e;
 
     // Main loop
+<<<<<<< HEAD
     int stepCount = 0;
+=======
+>>>>>>> 0ac8910690b61c2ab57e67f9d285d9d29c426d90
     while (!quit) {
         // Handle events on queue
         while (SDL_PollEvent(&e) != 0) {
@@ -67,6 +76,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
+<<<<<<< HEAD
         // Execute CPU step
         cpu.step();
         stepCount++;
@@ -76,15 +86,20 @@ int main(int argc, char* argv[]) {
             std::cout << "Step " << stepCount << " - PC: 0x" << std::hex << cpu.getPC() << std::dec << std::endl;
         }
 
+=======
+>>>>>>> 0ac8910690b61c2ab57e67f9d285d9d29c426d90
         // Clear screen
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         
         // Update screen
         SDL_RenderPresent(renderer);
+<<<<<<< HEAD
         
         // Add small delay to prevent overwhelming the system
         SDL_Delay(1);
+=======
+>>>>>>> 0ac8910690b61c2ab57e67f9d285d9d29c426d90
     }
 
     // Cleanup and exit
