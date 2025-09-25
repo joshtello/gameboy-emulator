@@ -162,6 +162,24 @@ public:
     void setHalfCarryFlag(bool value) { setFlag(FLAG_HALF_CARRY, value); }
     void setCarryFlag(bool value) { setFlag(FLAG_CARRY, value); }
     
+    // Stack operation opcodes
+    static constexpr uint8_t PUSH_AF = 0xF5;     // Push AF onto stack
+    static constexpr uint8_t PUSH_BC = 0xC5;     // Push BC onto stack
+    static constexpr uint8_t PUSH_DE = 0xD5;     // Push DE onto stack
+    static constexpr uint8_t PUSH_HL = 0xE5;     // Push HL onto stack
+
+    static constexpr uint8_t POP_AF = 0xF1;     // Pop AF from stack
+    static constexpr uint8_t POP_BC = 0xC1;     // Pop BC from stack
+    static constexpr uint8_t POP_DE = 0xD1;     // Pop DE from stack
+    static constexpr uint8_t POP_HL = 0xE1;     // Pop HL from stack
+
+    // Call operation opcodes
+    static constexpr uint8_t CALL_NN = 0xCD;    // Call to address NN
+    static constexpr uint8_t CALL_NZ = 0xC4;    // Call if Zero flag is 0
+    static constexpr uint8_t CALL_Z = 0xCC;     // Call if Zero flag is 1
+    static constexpr uint8_t CALL_NC = 0xD4;    // Call if Carry flag is 0
+    static constexpr uint8_t CALL_C = 0xDC;     // Call if Carry flag is 1
+
     // CPU operations
     void reset();                    // Reset CPU to initial state
     void step();                     // Execute one instruction

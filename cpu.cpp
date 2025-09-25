@@ -188,6 +188,57 @@ void CPU::step() {
         case LD_A_H: setA(getH()); break;
         case LD_A_L: setA(getL()); break;
         case LD_A_A: setA(getA()); break;
+
+        //PUSH
+        case PUSH_AF: // 0xF5
+            std::cout << "PUSH AF executed!" << std::endl;
+            push(getAF()); 
+            break;
+        case PUSH_BC: // 0xC5
+            push(getBC()); 
+            break;
+        case PUSH_DE: // 0xD5
+            push(getDE()); 
+            break;
+        case PUSH_HL: // 0xE5
+            push(getHL()); 
+            break;
+
+        //POP
+        case POP_AF: // 0xF1
+            setAF(pop()); 
+            break;
+        case POP_BC: // 0xC1
+            setBC(pop()); 
+            break;
+        case POP_DE: // 0xD1
+            setDE(pop()); 
+            break;
+        case POP_HL: // 0xE1
+            setHL(pop()); 
+            break;
+        
+        //CALL
+        case CALL_NN: // 0xCD
+            {
+                uint16_t address = readWord(PC);
+                PC += 2; //Move past the address
+                push(PC); //Save return address
+                PC = address; //Jump to function
+            }
+            break;
+        case CALL_NZ: // 0xC4
+            {
+                    uint16_t address = readWord(PC);
+                    PC += 2; //Move past the address
+                    if (!getZeroFlag()) {
+                    push(PC); //Save return address
+                    PC = address; //Jump to function
+                } 
+            }
+            break;
+        
+            
             
         default:
             std::cout << "Unknown opcode: 0x" << std::hex << static_cast<int>(opcode) 
