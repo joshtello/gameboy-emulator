@@ -1,0 +1,4 @@
+[33me70fb14[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Recreate main.cpp with SDL window code
+[33mb3cbfd2[m Add SDL3 header files
+[33ma37933f[m Add SDL window code and CMake configuration
+[33m461904c[m Initial commit: Basic SDL3 window setup

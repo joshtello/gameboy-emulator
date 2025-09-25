@@ -2,72 +2,22 @@
 #include <iostream>
 #include <iomanip>
 
+// Constructor
 CPU::CPU(Memory& mem) : memory(mem) {
     reset();
 }
 
-bool CPU::getFlag(uint8_t flag) const {
-    return (F & flag) != 0;
-}
-
-void CPU::setFlag(uint8_t flag, bool value) {
-    if (value) {
-        F |= flag;
-    } else {
-        F &= ~flag;
-    }
-}
-
+// Reset CPU to initial state
 void CPU::reset() {
-    // Initialize registers to Game Boy boot values
-    A = 0x01;
-    B = 0x00;
-    C = 0x13;
-    D = 0x00;
-    E = 0xD8;
-    F = 0xB0;  // Flags: Z=1, N=0, H=1, C=1
-    H = 0x01;
-    L = 0x4D;
-    PC = 0x0100;  // Game Boy starts execution at 0x0100
-    SP = 0xFFFE;  // Stack starts at 0xFFFE (top of high RAM)
+    AF.pair = 0;
+    BC.pair = 0;
+    DE.pair = 0;
+    HL.pair = 0;
+    SP = 0xFFFE;  // Stack starts at top of memory
+    PC = 0x100;   // Game Boy starts execution at 0x100
 }
 
-void CPU::step() {
-    // Fetch instruction from memory
-    uint8_t opcode = readByte(PC);
-    
-    // For now, just increment PC (we'll implement actual instructions later)
-    PC++;
-    
-    // Basic instruction handling (we'll expand this later)
-    switch (opcode) {
-        case 0x00: // NOP - No operation
-            // Do nothing
-            break;
-        case 0x18: // JR r8 - Jump relative
-            {
-                int8_t offset = readByte(PC);
-                PC += offset;
-                PC++; // Skip the offset byte
-            }
-            break;
-        default:
-            // For now, just increment PC for unknown instructions
-            break;
-    }
-}
-
-void CPU::push(uint16_t value) {
-    SP -= 2;  // Stack grows downward
-    writeWord(SP, value);
-}
-
-uint16_t CPU::pop() {
-    uint16_t value = readWord(SP);
-    SP += 2;
-    return value;
-}
-
+// Memory access helpers
 uint8_t CPU::readByte(uint16_t address) const {
     return memory.read(address);
 }
@@ -84,31 +34,164 @@ void CPU::writeWord(uint16_t address, uint16_t value) {
     memory.write_word(address, value);
 }
 
+// Flag operations
+bool CPU::getFlag(uint8_t flag) const {
+    return (AF.low & flag) != 0;
+}
+
+void CPU::setFlag(uint8_t flag, bool value) {
+    if (value) {
+        AF.low |= flag;
+    } else {
+        AF.low &= ~flag;
+    }
+}
+
+// Stack operations
+void CPU::push(uint16_t value) {
+    SP -= 2;
+    writeWord(SP, value);
+}
+
+uint16_t CPU::pop() {
+    uint16_t value = readWord(SP);
+    SP += 2;
+    return value;
+}
+
+// Debug methods
 void CPU::printRegisters() const {
-    std::cout << "=== CPU Registers ===" << std::endl;
-    std::cout << "A: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)A << std::endl;
-    std::cout << "B: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)B << std::endl;
-    std::cout << "C: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)C << std::endl;
-    std::cout << "D: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)D << std::endl;
-    std::cout << "E: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)E << std::endl;
-    std::cout << "F: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)F << std::endl;
-    std::cout << "H: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)H << std::endl;
-    std::cout << "L: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)L << std::endl;
-    std::cout << "PC: 0x" << std::hex << std::setw(4) << std::setfill('0') << PC << std::endl;
-    std::cout << "SP: 0x" << std::hex << std::setw(4) << std::setfill('0') << SP << std::endl;
-    std::cout << "AF: 0x" << std::hex << std::setw(4) << std::setfill('0') << getAF() << std::endl;
-    std::cout << "BC: 0x" << std::hex << std::setw(4) << std::setfill('0') << getBC() << std::endl;
-    std::cout << "DE: 0x" << std::hex << std::setw(4) << std::setfill('0') << getDE() << std::endl;
-    std::cout << "HL: 0x" << std::hex << std::setw(4) << std::setfill('0') << getHL() << std::endl;
-    std::cout << std::dec << std::endl;
+    std::cout << std::hex << std::uppercase << std::setfill('0')
+              << "AF: 0x" << std::setw(4) << getAF()
+              << " BC: 0x" << std::setw(4) << getBC()
+              << " DE: 0x" << std::setw(4) << getDE()
+              << " HL: 0x" << std::setw(4) << getHL()
+              << " PC: 0x" << std::setw(4) << PC
+              << " SP: 0x" << std::setw(4) << SP << std::endl;
+    printFlags();
 }
 
 void CPU::printFlags() const {
-    std::cout << "=== CPU Flags ===" << std::endl;
-    std::cout << "Zero: " << (getZeroFlag() ? "1" : "0") << std::endl;
-    std::cout << "Subtract: " << (getSubtractFlag() ? "1" : "0") << std::endl;
-    std::cout << "Half Carry: " << (getHalfCarryFlag() ? "1" : "0") << std::endl;
-    std::cout << "Carry: " << (getCarryFlag() ? "1" : "0") << std::endl;
-    std::cout << std::endl;
+    std::cout << "Flags: "
+              << "Z:" << (getZeroFlag() ? "1" : "0")
+              << " N:" << (getSubtractFlag() ? "1" : "0")
+              << " H:" << (getHalfCarryFlag() ? "1" : "0")
+              << " C:" << (getCarryFlag() ? "1" : "0")
+              << std::endl;
 }
 
+void CPU::step() {
+    // 1. Fetch opcode from memory at PC
+    uint8_t opcode = readByte(PC);
+    PC++;  // Increment PC to next instruction
+    
+    // 2. Execute the instruction
+    switch (opcode) {
+        case NOP:  // 0x00: No operation
+            break;
+            
+        case LD_BC_NN:  // 0x01: Load 16-bit immediate into BC
+            {
+                uint16_t value = readWord(PC);
+                setBC(value);
+                PC += 2;  // Increment PC by 2 for 16-bit value
+            }
+            break;
+            
+        case LD_B_N:   // 0x06: Load 8-bit immediate into B
+            {
+                uint8_t value = readByte(PC);
+                setB(value);
+                PC++;    // Increment PC for 8-bit value
+            }
+            break;
+            
+        case JP_NN:    // 0xC3: Jump to address NN
+            {
+                uint16_t address = readWord(PC);
+                PC = address;  // Set PC to jump address
+            }
+            break;
+            
+        case HALT:     // 0x76: Halt CPU until interrupt
+            // For now, just print a message
+            std::cout << "CPU HALT instruction at PC=" << std::hex << PC << std::endl;
+            break;
+        
+        // Load immediate value into register
+        case LD_C_N: { uint8_t value = readByte(PC); setC(value); PC++; break; }
+        case LD_D_N: { uint8_t value = readByte(PC); setD(value); PC++; break; }
+        case LD_E_N: { uint8_t value = readByte(PC); setE(value); PC++; break; }
+        case LD_H_N: { uint8_t value = readByte(PC); setH(value); PC++; break; }
+        case LD_L_N: { uint8_t value = readByte(PC); setL(value); PC++; break; }
+        case LD_A_N: { uint8_t value = readByte(PC); setA(value); PC++; break; }
+
+        // Load register into B
+        case LD_B_B: setB(getB()); break;
+        case LD_B_C: setB(getC()); break;
+        case LD_B_D: setB(getD()); break;
+        case LD_B_E: setB(getE()); break;
+        case LD_B_H: setB(getH()); break;
+        case LD_B_L: setB(getL()); break;
+        case LD_B_A: setB(getA()); break;
+
+        // Load register into C
+        case LD_C_B: setC(getB()); break;
+        case LD_C_C: setC(getC()); break;
+        case LD_C_D: setC(getD()); break;
+        case LD_C_E: setC(getE()); break;
+        case LD_C_H: setC(getH()); break;
+        case LD_C_L: setC(getL()); break;
+        case LD_C_A: setC(getA()); break;
+
+        // Load register into D
+        case LD_D_B: setD(getB()); break;
+        case LD_D_C: setD(getC()); break;
+        case LD_D_D: setD(getD()); break;
+        case LD_D_E: setD(getE()); break;
+        case LD_D_H: setD(getH()); break;
+        case LD_D_L: setD(getL()); break;
+        case LD_D_A: setD(getA()); break;
+
+        // Load register into E
+        case LD_E_B: setE(getB()); break;
+        case LD_E_C: setE(getC()); break;
+        case LD_E_D: setE(getD()); break;
+        case LD_E_E: setE(getE()); break;
+        case LD_E_H: setE(getH()); break;
+        case LD_E_L: setE(getL()); break;
+        case LD_E_A: setE(getA()); break;
+
+        // Load register into H
+        case LD_H_B: setH(getB()); break;
+        case LD_H_C: setH(getC()); break;
+        case LD_H_D: setH(getD()); break;
+        case LD_H_E: setH(getE()); break;
+        case LD_H_H: setH(getH()); break;
+        case LD_H_L: setH(getL()); break;
+        case LD_H_A: setH(getA()); break;
+
+        // Load register into L
+        case LD_L_B: setL(getB()); break;
+        case LD_L_C: setL(getC()); break;
+        case LD_L_D: setL(getD()); break;
+        case LD_L_E: setL(getE()); break;
+        case LD_L_H: setL(getH()); break;
+        case LD_L_L: setL(getL()); break;
+        case LD_L_A: setL(getA()); break;
+
+        // Load register into A
+        case LD_A_B: setA(getB()); break;
+        case LD_A_C: setA(getC()); break;
+        case LD_A_D: setA(getD()); break;
+        case LD_A_E: setA(getE()); break;
+        case LD_A_H: setA(getH()); break;
+        case LD_A_L: setA(getL()); break;
+        case LD_A_A: setA(getA()); break;
+            
+        default:
+            std::cout << "Unknown opcode: 0x" << std::hex << static_cast<int>(opcode) 
+                      << " at PC=0x" << PC-1 << std::endl;
+            break;
+    }
+}

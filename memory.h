@@ -1,6 +1,10 @@
 #pragma once
 #include <array>
 #include <cstdint>  // for uint8_t, uint16_t
+#include <fstream>  // for File handling
+#include <string>   // for std::string
+#include <stdexcept> // for std::runtime_error
+#include <iostream>  // for error messages
 
 class Memory {
 private:
@@ -72,4 +76,24 @@ public:
         write(address, value & 0xFF);         // Low byte
         write(address + 1, value >> 8);       // High byte
     }
-};
+
+    void loadRom(const std::string& filename) {
+        //1. Open the file
+        std::ifstream rom_file(filename, std::ios::binary);
+        if(!rom_file.is_open()){
+            throw std::runtime_error("Could not open ROM file");
+        }
+
+        //2.Read the ROM data into memory starting at 0x0000
+        rom_file.read(reinterpret_cast<char*>(memory.data()), 0x4000);
+        
+        //Check how many bytes were read
+        std::streamsize bytes_read = rom_file.gcount();
+        if (bytes_read == 0) {
+            throw std::runtime_error("Failed to read ROM file");
+        }
+
+        //3.Close the file
+        rom_file.close(); 
+    }
+}; // End of Memory class
