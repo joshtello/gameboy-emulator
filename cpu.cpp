@@ -80,6 +80,10 @@ void CPU::printFlags() const {
               << std::endl;
 }
 
+void CPU::setInterruptEnable(bool value) {
+    interruptEnable = value;
+}
+
 void CPU::step() {
     // 1. Fetch opcode from memory at PC
     uint8_t opcode = readByte(PC);
@@ -237,7 +241,70 @@ void CPU::step() {
                 } 
             }
             break;
-        
+        case CALL_Z: // 0xCC
+            {
+                uint16_t address = readWord(PC);
+                PC += 2; //Move past the address
+                if (getZeroFlag()) {
+                    push(PC); //Save return address
+                    PC = address; //Jump to function
+                }
+            }
+            break;
+        case CALL_NC: // 0xD4
+            {
+                uint16_t address = readWord(PC);
+                PC += 2; //Move past the address
+                if (!getCarryFlag()) {
+                    push(PC); //Save return address
+                    PC = address; //Jump to function
+                }
+            }
+            break;
+        case CALL_C: // 0xDC
+            {
+                uint16_t address = readWord(PC);
+                PC += 2; //Move past the address
+                if (getCarryFlag()) {
+                    push(PC); //Save return address
+                    PC = address; //Jump to function
+                }
+            }
+            break;
+        case LD_SP_NN: // 0x31: Load 16-bit immediate into SP
+            {
+                uint16_t value = readWord(PC);
+                setSP(value);
+                PC += 2; //Move past the address
+            }
+            break;
+        case LD_NN_A: // 0xEA
+            {
+                uint16_t address = readWord(PC);
+                PC += 2; //Move past the address
+                writeByte(address, getA()); //store A at address
+            }
+            break;
+        case DI: // 0xF3
+            setInterruptEnable(false);
+            break;
+        case JR_R8: // 0x18
+            {
+                int8_t offset = readByte(PC);
+                PC += 1; //Move past the offset
+                PC += offset; //Jump to address
+            }
+            break;
+        case RET: // 0xC9
+            PC = pop(); //Return to address
+            break;
+        case LD_HL_NN: // 0x21
+            {
+                uint16_t value = readWord(PC);
+                setHL(value);
+                PC += 2; //Move past the address
+            }
+            break;
             
             
         default:

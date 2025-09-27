@@ -1,12 +1,14 @@
-#include <SDL3/SDL.h>
+#include <SDL2/SDL.h>
 #include <iostream>
 #include "memory.h"
 #include "cpu.h"
+#include "ppu.h"
 
 int main(int argc, char* argv[]) {
-    // Create memory and CPU
+    // Create memory, CPU, and PPU
     Memory memory;
     CPU cpu(memory);
+    PPU ppu;
 
     // Load the test ROM
     try {
@@ -16,12 +18,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Initialize CPU
+    // Initialize CPU and PPU
     cpu.reset();  // Sets PC to 0x100 (ROM entry point)
+    ppu.init();  // Initialize graphics
 
-    // Run CPU steps and print output
+    // Run CPU steps and render graphics
     for (int i = 0; i < 1000; i++) {  // Run 1000 instructions for now
         cpu.step();
+        
+        // Render graphics every frame
+        ppu.render();
         
         // Print register state every 100 instructions
         if (i % 100 == 0) {

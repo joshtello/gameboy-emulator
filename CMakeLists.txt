@@ -10,7 +10,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 link_directories(${CMAKE_SOURCE_DIR})
 
 # Add executable
-add_executable(gameboy_emulator main.cpp cpu.cpp)
+add_executable(gameboy_emulator main.cpp cpu.cpp ppu.cpp)
 
 # Link SDL2 and SDL2main
 target_link_libraries(gameboy_emulator SDL2main SDL2)

@@ -111,6 +111,8 @@ private:
     // Helper methods for flag operations
     bool getFlag(uint8_t flag) const;
     void setFlag(uint8_t flag, bool value);
+
+    bool interruptEnable;
     
 public:
     // Constructor
@@ -180,6 +182,19 @@ public:
     static constexpr uint8_t CALL_NC = 0xD4;    // Call if Carry flag is 0
     static constexpr uint8_t CALL_C = 0xDC;     // Call if Carry flag is 1
 
+    
+    static constexpr uint8_t LD_SP_NN = 0x31;    // Load 16-bit immediate into SP
+
+    static constexpr uint8_t DI = 0xF3;     // Disable interrupts
+
+    static constexpr uint8_t LD_NN_A = 0xEA;    // Store A to memory address
+
+    static constexpr uint8_t JR_R8 = 0x18;    // Jump relative
+
+    static constexpr uint8_t RET = 0xC9;    // Return from Function
+    
+    static constexpr uint8_t LD_HL_NN = 0x21;    // Load 16-bit immediate into HL
+
     // CPU operations
     void reset();                    // Reset CPU to initial state
     void step();                     // Execute one instruction
@@ -195,4 +210,6 @@ public:
     // Debug methods
     void printRegisters() const;
     void printFlags() const;
+
+    void setInterruptEnable(bool value);
 };
