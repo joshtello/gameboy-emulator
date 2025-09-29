@@ -1092,6 +1092,196 @@ void CPU::step() {
             }
             break;
             
+            
+        case 0xB7: // OR A, A
+            {
+                // OR A, A is same as A (no change to A)
+                setZeroFlag(getA() == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(false);
+                setCarryFlag(false);
+            }
+            break;
+            
+        case 0x46: // LD B, (HL)
+            {
+                uint16_t hlValue = getHL();
+                uint8_t memValue = readByte(hlValue);
+                setB(memValue);
+            }
+            break;
+            
+        case 0x2D: // DEC L
+            {
+                uint8_t lValue = getL();
+                uint8_t result = lValue - 1;
+                setL(result);
+                
+                setZeroFlag(result == 0);
+                setSubtractFlag(true);
+                setHalfCarryFlag((lValue & 0x0F) == 0);
+            }
+            break;
+            
+        case 0x25: // DEC H
+            {
+                uint8_t hValue = getH();
+                uint8_t result = hValue - 1;
+                setH(result);
+                
+                setZeroFlag(result == 0);
+                setSubtractFlag(true);
+                setHalfCarryFlag((hValue & 0x0F) == 0);
+            }
+            break;
+            
+        case 0x72: // LD (HL), D
+            {
+                uint16_t hlValue = getHL();
+                uint8_t dValue = getD();
+                writeByte(hlValue, dValue);
+            }
+            break;
+            
+        case 0x71: // LD (HL), C
+            {
+                uint16_t hlValue = getHL();
+                uint8_t cValue = getC();
+                writeByte(hlValue, cValue);
+            }
+            break;
+            
+        case 0x70: // LD (HL), B
+            {
+                uint16_t hlValue = getHL();
+                uint8_t bValue = getB();
+                writeByte(hlValue, bValue);
+            }
+            break;
+            
+        case 0xD0: // RET NC
+            {
+                if (!getCarryFlag()) {
+                    // Pop return address from stack
+                    uint8_t low = readByte(SP);
+                    SP++;
+                    uint8_t high = readByte(SP);
+                    SP++;
+                    PC = (high << 8) | low;
+                }
+            }
+            break;
+            
+        case 0xC8: // RET Z
+            {
+                if (getZeroFlag()) {
+                    // Pop return address from stack
+                    uint8_t low = readByte(SP);
+                    SP++;
+                    uint8_t high = readByte(SP);
+                    SP++;
+                    PC = (high << 8) | low;
+                }
+            }
+            break;
+            
+        case 0xB6: // OR (HL)
+            {
+                uint16_t hlValue = getHL();
+                uint8_t memValue = readByte(hlValue);
+                uint8_t aValue = getA();
+                uint8_t result = aValue | memValue;
+                setA(result);
+                
+                // Set flags: Z=1 if result is 0, N=0, H=0, C=0
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(false);
+                setCarryFlag(false);
+            }
+            break;
+            
+        case 0x35: // DEC (HL)
+            {
+                uint16_t hlValue = getHL();
+                uint8_t memValue = readByte(hlValue);
+                uint8_t result = memValue - 1;
+                writeByte(hlValue, result);
+                
+                // Set flags: Z=1 if result is 0, N=1, H=1 if borrow from bit 4
+                setZeroFlag(result == 0);
+                setSubtractFlag(true);
+                setHalfCarryFlag((memValue & 0x0F) == 0x00);
+            }
+            break;
+            
+        case 0x6E: // LD L, (HL)
+            {
+                uint16_t hlValue = getHL();
+                uint8_t memValue = readByte(hlValue);
+                setL(memValue);
+            }
+            break;
+            
+        case 0x1D: // DEC E
+            {
+                uint8_t eValue = getE();
+                uint8_t result = eValue - 1;
+                setE(result);
+                
+                // Set flags: Z=1 if result is 0, N=1, H=1 if borrow from bit 4
+                setZeroFlag(result == 0);
+                setSubtractFlag(true);
+                setHalfCarryFlag((eValue & 0x0F) == 0x00);
+            }
+            break;
+            
+        case 0x4E: // LD C, (HL)
+            {
+                uint16_t hlValue = getHL();
+                uint8_t memValue = readByte(hlValue);
+                setC(memValue);
+            }
+            break;
+            
+        case 0x56: // LD D, (HL)
+            {
+                uint16_t hlValue = getHL();
+                uint8_t memValue = readByte(hlValue);
+                setD(memValue);
+            }
+            break;
+            
+        case 0xAE: // XOR (HL)
+            {
+                uint16_t hlValue = getHL();
+                uint8_t memValue = readByte(hlValue);
+                uint8_t aValue = getA();
+                uint8_t result = aValue ^ memValue;
+                setA(result);
+                
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(false);
+                setCarryFlag(false);
+            }
+            break;
+            
+        case 0xEE: // XOR d8
+            {
+                uint8_t value = readByte(PC);
+                PC++;
+                uint8_t aValue = getA();
+                uint8_t result = aValue ^ value;
+                setA(result);
+                
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(false);
+                setCarryFlag(false);
+            }
+            break;
+            
         case 0xCE: // ADC A, d8 - Add with carry immediate
             {
                 uint8_t value = readByte(PC);
@@ -1105,6 +1295,13 @@ void CPU::step() {
                 setSubtractFlag(false);
                 setHalfCarryFlag(((aValue & 0x0F) + (value & 0x0F) + carry) > 0x0F);
                 setCarryFlag(result > 0xFF);
+            }
+            break;
+            
+        case 0xE9: // JP (HL) - Jump to address in HL register
+            {
+                uint16_t hlValue = getHL();
+                PC = hlValue;
             }
             break;
             
