@@ -195,6 +195,88 @@ public:
     
     static constexpr uint8_t LD_HL_NN = 0x21;    // Load 16-bit immediate into HL
 
+    static constexpr uint8_t SUB_d8 = 0xD6;    // Subtract 8-bit immediate from A
+
+    static constexpr uint8_t ADD_A_d8 = 0xC6;    // Add 8-bit immediate to A
+
+    static constexpr uint8_t INC_A = 0x3C;
+
+    static constexpr uint8_t DEC_A = 0x3D;
+
+    static constexpr uint8_t CP_d8 = 0xFE;
+
+    static constexpr uint8_t LD_HLplus_A = 0x22;  // Store A to (HL) and increment HL
+
+    static constexpr uint8_t LD_DE_NN = 0x11;    // Load 16-bit immediate into DE
+
+    static constexpr uint8_t JR_NZ_R8 = 0x20;    // Jump if not zero
+
+    static constexpr uint8_t LDH_A_a8 = 0xF0;    // Load A from I/O register
+
+    static constexpr uint8_t XOR_A = 0xAF;       // XOR A with A (sets A to 0)
+
+    static constexpr uint8_t LDH_a8_A = 0xE0;    // Store A to I/O register
+
+    static constexpr uint8_t LD_A_HLplus = 0x2A; // Load A from memory and increment HL
+
+    static constexpr uint8_t JR_Z_R8 = 0x28;     // Jump if zero flag is set
+
+    static constexpr uint8_t INC_BC = 0x03;      // Increment BC register
+
+    static constexpr uint8_t ADD_A_A = 0x87;     // Add A to A
+
+    static constexpr uint8_t CB_PREFIX = 0xCB;   // CB prefix for bit operations
+
+    static constexpr uint8_t LD_A_HL = 0x7E;     // Load A from (HL)
+    static constexpr uint8_t LD_HL_A = 0x77;     // Store A to (HL)
+    static constexpr uint8_t ADD_HL_BC = 0x09;   // Add BC to HL
+    static constexpr uint8_t DEC_BC = 0x0B;      // Decrement BC
+
+    static constexpr uint8_t LD_A_NN = 0xFA;     // Load A from absolute address
+
+    static constexpr uint8_t JR_C_R8 = 0x38;     // Jump if carry flag set
+    static constexpr uint8_t JR_NC_R8 = 0x30;   // Jump if carry flag not set
+    static constexpr uint8_t ADD_HL_DE = 0x19;   // Add DE to HL
+    static constexpr uint8_t ADD_HL_HL = 0x29;  // Add HL to HL
+    static constexpr uint8_t LD_HL_D8 = 0x36;   // Store immediate to (HL)
+    static constexpr uint8_t LD_A_BC = 0x0A;     // Load A from (BC)
+    static constexpr uint8_t LD_BC_A = 0x02;     // Store A to (BC)
+
+    static constexpr uint8_t LD_NN_A_ALT = 0xEA;  // Store A to absolute address (alternative)
+    static constexpr uint8_t LD_A_NN_ALT = 0xFA;  // Load A from absolute address (alternative)
+
+    // Critical missing instructions for Pokemon Red
+    static constexpr uint8_t LD_HLminus_A = 0x32;  // Store A to (HL) and decrement HL
+    static constexpr uint8_t LD_A_HLminus = 0x3A;  // Load A from (HL) and decrement HL
+    static constexpr uint8_t LD_NN_SP = 0x08;      // Store SP to absolute address
+    static constexpr uint8_t JP_C_NN = 0xDA;       // Jump to address if carry
+    static constexpr uint8_t JP_NC_NN = 0xD2;      // Jump to address if not carry
+    static constexpr uint8_t JP_Z_NN = 0xCA;       // Jump to address if zero
+    static constexpr uint8_t JP_NZ_NN = 0xC2;      // Jump to address if not zero
+    static constexpr uint8_t EI = 0xFB;            // Enable interrupts
+    static constexpr uint8_t RETI = 0xD9;          // Return from interrupt
+    static constexpr uint8_t RST_00 = 0xC7;        // Restart to 0x00
+    static constexpr uint8_t RST_08 = 0xCF;        // Restart to 0x08
+    static constexpr uint8_t RST_10 = 0xD7;        // Restart to 0x10
+    static constexpr uint8_t RST_18 = 0xDF;        // Restart to 0x18
+    static constexpr uint8_t RST_20 = 0xE7;        // Restart to 0x20
+    static constexpr uint8_t RST_28 = 0xEF;        // Restart to 0x28
+    static constexpr uint8_t RST_30 = 0xF7;        // Restart to 0x30
+    static constexpr uint8_t RST_38 = 0xFF;        // Restart to 0x38
+    static constexpr uint8_t INC_DE = 0x13;        // Increment DE
+    static constexpr uint8_t INC_HL = 0x23;        // Increment HL
+    static constexpr uint8_t DEC_DE = 0x1B;        // Decrement DE
+    static constexpr uint8_t DEC_HL = 0x2B;        // Decrement HL
+    static constexpr uint8_t ADD_HL_SP = 0x39;     // Add SP to HL
+    static constexpr uint8_t DAA = 0x27;           // Decimal adjust A
+    static constexpr uint8_t CPL = 0x2F;           // Complement A
+    static constexpr uint8_t SCF = 0x37;           // Set carry flag
+    static constexpr uint8_t CCF = 0x3F;            // Complement carry flag
+
+    // Additional critical memory operations
+    static constexpr uint8_t LD_DE_A = 0x12;        // Store A to (DE)
+    static constexpr uint8_t LD_A_DE = 0x1A;        // Load A from (DE)
+
     // CPU operations
     void reset();                    // Reset CPU to initial state
     void step();                     // Execute one instruction

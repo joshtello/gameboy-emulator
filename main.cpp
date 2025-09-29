@@ -8,11 +8,11 @@ int main(int argc, char* argv[]) {
     // Create memory, CPU, and PPU
     Memory memory;
     CPU cpu(memory);
-    PPU ppu;
+    PPU ppu(memory); // Pass memory reference to PPU constructor
 
     // Load the test ROM
     try {
-        memory.loadRom("cpu_instrs.gb");  // Make sure this file is in your project directory
+        memory.loadRom("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb");  // Load Pokemon Red ROM
     } catch (const std::runtime_error& e) {
         std::cerr << "Failed to load ROM: " << e.what() << std::endl;
         return 1;
@@ -22,18 +22,42 @@ int main(int argc, char* argv[]) {
     cpu.reset();  // Sets PC to 0x100 (ROM entry point)
     ppu.init();  // Initialize graphics
 
-    // Run CPU steps and render graphics
-    for (int i = 0; i < 1000; i++) {  // Run 1000 instructions for now
-        cpu.step();
+
+    bool running = true;
+    while (running) {
+        SDL_Event event;
         
-        // Render graphics every frame
-        ppu.render();
-        
-        // Print register state every 100 instructions
-        if (i % 100 == 0) {
-            cpu.printRegisters();
-            std::cout << "----------------" << std::endl;
+        // Wait for events instead of just polling
+        if (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = false;
+            }
         }
+        
+        // TEMPORARY: Skip CPU execution to test PPU with manual VRAM data
+        // cpu.step();
+        
+        // Manually populate VRAM with test data
+        static bool vramInitialized = false;
+        if (!vramInitialized) {
+            // Write some test tile data to VRAM
+            for (int i = 0; i < 16; i++) {
+                memory.write(0x8000 + i, 0xFF); // Solid white tile
+            }
+            for (int i = 0; i < 16; i++) {
+                memory.write(0x8010 + i, 0x00); // Solid black tile
+            }
+            
+            // Write tile map data
+            for (int i = 0; i < 32 * 32; i++) {
+                memory.write(0x9800 + i, (i % 2) ? 1 : 0); // Alternating tiles
+            }
+            
+            vramInitialized = true;
+            std::cout << "VRAM initialized with test data" << std::endl;
+        }
+        
+        ppu.render();
     }
 
     return 0;

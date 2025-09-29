@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <vector>
 #include <cstdint>  // for uint8_t, uint16_t
 #include <fstream>  // for File handling
 #include <string>   // for std::string
@@ -10,6 +11,16 @@ class Memory {
 private:
     // Game Boy has 64KB of addressable memory (0x0000-0xFFFF)
     std::array<uint8_t, 0x10000> memory;  // 64KB = 0x10000 bytes
+    
+    // MBC1 Bank Switching Support
+    std::vector<uint8_t> romData;  // Full ROM data
+    uint8_t currentRomBank = 1;    // Current ROM bank (1-31)
+    uint8_t currentRamBank = 0;    // Current RAM bank (0-3)
+    bool ramEnabled = false;       // RAM enable flag
+    bool bankingMode = false;      // Banking mode (false=ROM, true=RAM)
+    
+    // Debug counter for memory accesses
+    mutable int debugAccessCount = 0;
 
     // Memory map regions
     static constexpr uint16_t ROM_BANK_0_START    = 0x0000;  // ROM Bank 0 (16KB)
@@ -36,10 +47,48 @@ public:
     Memory() {
         // Initialize all memory to 0
         memory.fill(0);
+        
+        // Set post-BIOS defaults for I/O registers
+        memory[0xFF40] = 0x91;  // LCDC - Display enabled, tile map 0x9800, tile data 0x8000
+        memory[0xFF47] = 0xFC;  // BGP - Background palette
+        memory[0xFF42] = 0x00;  // SCY - Scroll Y
+        memory[0xFF43] = 0x00;  // SCX - Scroll X
+        memory[0xFF44] = 0x00;  // LY - LCD Y coordinate
+        memory[0xFF45] = 0x00;  // LYC - LY compare
+        memory[0xFF46] = 0xFF;  // DMA - DMA transfer
+        memory[0xFF48] = 0xFF;  // OBP0 - Object palette 0
+        memory[0xFF49] = 0xFF;  // OBP1 - Object palette 1
+        memory[0xFF4A] = 0x00;  // WY - Window Y
+        memory[0xFF4B] = 0x00;  // WX - Window X
     }
 
     // Read a byte from memory
     uint8_t read(uint16_t address) const {
+        // Debug logging for specific memory ranges (limit to first 200 accesses)
+        if (debugAccessCount < 200 && ((address >= 0x0000 && address <= 0x7FFF) || 
+            (address >= 0xFF00 && address <= 0xFF7F) ||
+            (address >= 0xFF40 && address <= 0xFF4B))) {
+            std::cout << "READ 0x" << std::hex << address << " = 0x" << static_cast<int>(memory[address]) << std::endl;
+            debugAccessCount++;
+        }
+        
+        // MBC1 ROM Bank Switching
+        if (address >= ROM_BANK_0_START && address <= ROM_BANK_0_END) {
+            // ROM Bank 0 (always accessible)
+            if (address < romData.size()) {
+                return romData[address];
+            }
+            return 0xFF;  // Return 0xFF for unmapped ROM
+        }
+        else if (address >= ROM_BANK_N_START && address <= ROM_BANK_N_END) {
+            // ROM Bank N (switchable)
+            uint32_t romOffset = (currentRomBank * 0x4000) + (address - ROM_BANK_N_START);
+            if (romOffset < romData.size()) {
+                return romData[romOffset];
+            }
+            return 0xFF;  // Return 0xFF for unmapped ROM
+        }
+        
         // Special handling for echo RAM
         if (address >= ECHO_RAM_START && address <= ECHO_RAM_END) {
             // Echo RAM mirrors Work RAM
@@ -50,8 +99,44 @@ public:
 
     // Write a byte to memory
     void write(uint16_t address, uint8_t value) {
-        // Special handling for different memory regions
-        if (address >= ROM_BANK_0_START && address <= ROM_BANK_N_END) {
+        // Debug logging for specific memory ranges (limit to first 200 accesses)
+        if (debugAccessCount < 200 && ((address >= 0x0000 && address <= 0x7FFF) || 
+            (address >= 0xFF00 && address <= 0xFF7F) ||
+            (address >= 0xFF40 && address <= 0xFF4B))) {
+            std::cout << "WRITE 0x" << std::hex << address << " = 0x" << static_cast<int>(value) << std::endl;
+            debugAccessCount++;
+        }
+        
+        // MBC1 Register Handling
+        if (address >= 0x0000 && address <= 0x1FFF) {
+            // RAM Enable Register (0x0000-0x1FFF)
+            ramEnabled = (value & 0x0A) == 0x0A;
+            std::cout << "MBC1 RAM Enable: " << (ramEnabled ? "ON" : "OFF") << std::endl;
+        }
+        else if (address >= 0x2000 && address <= 0x3FFF) {
+            // ROM Bank Number Register (0x2000-0x3FFF)
+            uint8_t bankNumber = value & 0x1F;  // Lower 5 bits
+            if (bankNumber == 0) bankNumber = 1;  // Bank 0 is not allowed, use bank 1
+            currentRomBank = bankNumber;
+            std::cout << "MBC1 ROM Bank: " << static_cast<int>(currentRomBank) << std::endl;
+        }
+        else if (address >= 0x4000 && address <= 0x5FFF) {
+            // RAM Bank Number / Upper ROM Bank Register (0x4000-0x5FFF)
+            if (bankingMode) {
+                currentRamBank = value & 0x03;  // Lower 2 bits for RAM bank
+                std::cout << "MBC1 RAM Bank: " << static_cast<int>(currentRamBank) << std::endl;
+            } else {
+                // Upper ROM bank bits
+                currentRomBank = (currentRomBank & 0x1F) | ((value & 0x03) << 5);
+                std::cout << "MBC1 Upper ROM Bank: " << static_cast<int>(currentRomBank) << std::endl;
+            }
+        }
+        else if (address >= 0x6000 && address <= 0x7FFF) {
+            // Banking Mode Select Register (0x6000-0x7FFF)
+            bankingMode = (value & 0x01) != 0;
+            std::cout << "MBC1 Banking Mode: " << (bankingMode ? "RAM" : "ROM") << std::endl;
+        }
+        else if (address >= ROM_BANK_0_START && address <= ROM_BANK_N_END) {
             // Can't write to ROM
             return;
         }
@@ -59,6 +144,16 @@ public:
             // Writing to Echo RAM also writes to Work RAM
             memory[address - 0x2000] = value;  // Write to Work RAM
             memory[address] = value;           // Write to Echo RAM
+        }
+        else if (address == 0xFF40) {
+            // LCDC register - enable display and set tile map
+            memory[address] = value;
+            std::cout << "LCDC register set to: 0x" << std::hex << static_cast<int>(value) << std::endl;
+        }
+        else if (address == 0xFF47) {
+            // BGP register - background palette
+            memory[address] = value;
+            std::cout << "BGP register set to: 0x" << std::hex << static_cast<int>(value) << std::endl;
         }
         else {
             memory[address] = value;
@@ -84,16 +179,33 @@ public:
             throw std::runtime_error("Could not open ROM file");
         }
 
-        //2.Read the ROM data into memory starting at 0x0000
-        rom_file.read(reinterpret_cast<char*>(memory.data()), 0x4000);
+        //2. Get file size
+        rom_file.seekg(0, std::ios::end);
+        std::streamsize file_size = rom_file.tellg();
+        rom_file.seekg(0, std::ios::beg);
         
-        //Check how many bytes were read
+        std::cout << "ROM file size: " << file_size << " bytes" << std::endl;
+
+        //3. Read the entire ROM into romData vector
+        romData.resize(file_size);
+        rom_file.read(reinterpret_cast<char*>(romData.data()), file_size);
+        
+        //4. Check how many bytes were read
         std::streamsize bytes_read = rom_file.gcount();
         if (bytes_read == 0) {
             throw std::runtime_error("Failed to read ROM file");
         }
+        
+        std::cout << "ROM loaded: " << bytes_read << " bytes" << std::endl;
+        std::cout << "ROM banks available: " << (file_size / 0x4000) << std::endl;
 
-        //3.Close the file
+        //5. Copy first 16KB to memory for ROM Bank 0
+        if (file_size >= 0x4000) {
+            std::copy(romData.begin(), romData.begin() + 0x4000, memory.begin());
+            std::cout << "ROM Bank 0 (0x0000-0x3FFF) loaded" << std::endl;
+        }
+
+        //6. Close the file
         rom_file.close(); 
     }
 }; // End of Memory class
