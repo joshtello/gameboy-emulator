@@ -64,21 +64,17 @@ public:
 
     // Read a byte from memory
     uint8_t read(uint16_t address) const {
-        // Debug logging for specific memory ranges (limit to first 200 accesses)
-        if (debugAccessCount < 200 && ((address >= 0x0000 && address <= 0x7FFF) || 
-            (address >= 0xFF00 && address <= 0xFF7F) ||
-            (address >= 0xFF40 && address <= 0xFF4B))) {
-            std::cout << "READ 0x" << std::hex << address << " = 0x" << static_cast<int>(memory[address]) << std::endl;
-            debugAccessCount++;
+        // Debug: Check what CPU reads at critical addresses
+        if (address == 0x0100 || address == 0x0101 || address == 0x0102 || address == 0x0103) {
+            uint8_t romValue = (address < romData.size()) ? romData[address] : 0xFF;
+            uint8_t memValue = memory[address];
+            std::cout << "CPU reading 0x" << std::hex << address << " ROM=0x" << static_cast<int>(romValue) << " MEM=0x" << static_cast<int>(memValue) << std::endl;
         }
         
         // MBC1 ROM Bank Switching
         if (address >= ROM_BANK_0_START && address <= ROM_BANK_0_END) {
-            // ROM Bank 0 (always accessible)
-            if (address < romData.size()) {
-                return romData[address];
-            }
-            return 0xFF;  // Return 0xFF for unmapped ROM
+            // ROM Bank 0 (always accessible) - read from memory array
+            return memory[address];
         }
         else if (address >= ROM_BANK_N_START && address <= ROM_BANK_N_END) {
             // ROM Bank N (switchable)
@@ -99,13 +95,7 @@ public:
 
     // Write a byte to memory
     void write(uint16_t address, uint8_t value) {
-        // Debug logging for specific memory ranges (limit to first 200 accesses)
-        if (debugAccessCount < 200 && ((address >= 0x0000 && address <= 0x7FFF) || 
-            (address >= 0xFF00 && address <= 0xFF7F) ||
-            (address >= 0xFF40 && address <= 0xFF4B))) {
-            std::cout << "WRITE 0x" << std::hex << address << " = 0x" << static_cast<int>(value) << std::endl;
-            debugAccessCount++;
-        }
+        // Memory write - no debug output for clean test
         
         // MBC1 Register Handling
         if (address >= 0x0000 && address <= 0x1FFF) {
@@ -148,12 +138,12 @@ public:
         else if (address == 0xFF40) {
             // LCDC register - enable display and set tile map
             memory[address] = value;
-            std::cout << "LCDC register set to: 0x" << std::hex << static_cast<int>(value) << std::endl;
+            // LCDC register set
         }
         else if (address == 0xFF47) {
             // BGP register - background palette
             memory[address] = value;
-            std::cout << "BGP register set to: 0x" << std::hex << static_cast<int>(value) << std::endl;
+            // BGP register set
         }
         else {
             memory[address] = value;

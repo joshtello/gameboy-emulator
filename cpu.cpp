@@ -17,65 +17,7 @@ void CPU::reset() {
     SP = 0xFFFE;       // Stack pointer
     PC = 0x0100;       // Program counter (ROM entry point)
     
-    // Debug: Print CPU state at reset
-    std::cout << "=== CPU RESET STATE ===" << std::endl;
-    std::cout << "A=0x" << std::hex << static_cast<int>(getA()) << " (expected: 0x01)" << std::endl;
-    std::cout << "F=0x" << std::hex << static_cast<int>(AF.low) << " (expected: 0xB0)" << std::endl;
-    std::cout << "BC=0x" << std::hex << getBC() << " (expected: 0x0013)" << std::endl;
-    std::cout << "DE=0x" << std::hex << getDE() << " (expected: 0x00D8)" << std::endl;
-    std::cout << "HL=0x" << std::hex << getHL() << " (expected: 0x014D)" << std::endl;
-    std::cout << "SP=0x" << std::hex << SP << " (expected: 0xFFFE)" << std::endl;
-    std::cout << "PC=0x" << std::hex << PC << " (expected: 0x0100)" << std::endl;
-    
-    // Debug: Print first 32 bytes of ROM from entry point
-    std::cout << "\n=== ROM ENTRY POINT (0x0100-0x011F) ===" << std::endl;
-    for (int i = 0; i < 32; i++) {
-        if (i % 16 == 0) {
-            std::cout << "0x" << std::hex << (0x0100 + i) << ": ";
-        }
-        std::cout << std::hex << static_cast<int>(memory.read(0x0100 + i)) << " ";
-        if (i % 16 == 15) {
-            std::cout << std::endl;
-        }
-    }
-    std::cout << std::endl;
-    
-    // Print first 64 bytes of memory from 0xFF00
-    std::cout << "\n=== MEMORY 0xFF00-0xFF3F ===" << std::endl;
-    for (int i = 0; i < 64; i++) {
-        if (i % 16 == 0) {
-            std::cout << "0x" << std::hex << (0xFF00 + i) << ": ";
-        }
-        std::cout << std::hex << static_cast<int>(memory.read(0xFF00 + i)) << " ";
-        if (i % 16 == 15) {
-            std::cout << std::endl;
-        }
-    }
-    std::cout << std::endl;
-    
-    // Check specific registers
-    std::cout << "\n=== REGISTER CHECKS ===" << std::endl;
-    std::cout << "LCDC (0xFF40) = 0x" << std::hex << static_cast<int>(memory.read(0xFF40)) << " (expected: 0x91)" << std::endl;
-    std::cout << "BGP (0xFF47) = 0x" << std::hex << static_cast<int>(memory.read(0xFF47)) << " (expected: 0xFC)" << std::endl;
-    
-    // Check if values match expected
-    bool allMatch = true;
-    if (getA() != 0x01) { std::cout << "ERROR: A register mismatch!" << std::endl; allMatch = false; }
-    if (AF.low != 0xB0) { std::cout << "ERROR: F register mismatch!" << std::endl; allMatch = false; }
-    if (getBC() != 0x0013) { std::cout << "ERROR: BC register mismatch!" << std::endl; allMatch = false; }
-    if (getDE() != 0x00D8) { std::cout << "ERROR: DE register mismatch!" << std::endl; allMatch = false; }
-    if (getHL() != 0x014D) { std::cout << "ERROR: HL register mismatch!" << std::endl; allMatch = false; }
-    if (SP != 0xFFFE) { std::cout << "ERROR: SP register mismatch!" << std::endl; allMatch = false; }
-    if (PC != 0x0100) { std::cout << "ERROR: PC register mismatch!" << std::endl; allMatch = false; }
-    if (memory.read(0xFF40) != 0x91) { std::cout << "ERROR: LCDC register mismatch!" << std::endl; allMatch = false; }
-    if (memory.read(0xFF47) != 0xFC) { std::cout << "ERROR: BGP register mismatch!" << std::endl; allMatch = false; }
-    
-    if (allMatch) {
-        std::cout << "✓ All registers match expected post-BIOS defaults!" << std::endl;
-    } else {
-        std::cout << "✗ Some registers don't match expected values!" << std::endl;
-    }
-    std::cout << "=========================" << std::endl;
+    // CPU reset complete - ready for testing
 }
 
 // Memory access helpers
@@ -146,28 +88,19 @@ void CPU::setInterruptEnable(bool value) {
 }
 
 void CPU::step() {
-    // CPU tracer - log first few thousand cycles
-    static int cycleCount = 0;
-    static constexpr int MAX_TRACE_CYCLES = 5000;
-    
-    if (cycleCount < MAX_TRACE_CYCLES) {
-        std::cout << "Cycle " << cycleCount << ": PC=0x" << std::hex << PC 
-                  << " A=0x" << static_cast<int>(getA()) 
-                  << " BC=0x" << getBC() 
-                  << " DE=0x" << getDE() 
-                  << " HL=0x" << getHL() 
-                  << " SP=0x" << SP << std::endl;
-        cycleCount++;
-    }
+    // CPU step - no debug output to focus on serial output
     
     // 1. Fetch opcode from memory at PC
     uint8_t opcode = readByte(PC);
     PC++;  // Increment PC to next instruction
     
-    // Log instruction execution
-    if (cycleCount < MAX_TRACE_CYCLES) {
-        std::cout << "  Executing: 0x" << std::hex << static_cast<int>(opcode) << std::endl;
-    }
+    // Execute instruction
+    std::cout << "At PC=" << std::hex << PC 
+          << " opcode=" << (int)opcode 
+          << " next two bytes=" 
+          << (int)readByte(PC) << " " << (int)readByte(PC+1) 
+          << std::endl;
+
     
     // 2. Execute the instruction
     switch (opcode) {
@@ -198,8 +131,7 @@ void CPU::step() {
             break;
             
         case HALT:     // 0x76: Halt CPU until interrupt
-            // For now, just print a message
-            std::cout << "CPU HALT instruction at PC=" << std::hex << PC << std::endl;
+            // CPU halted
             break;
         
         // Load immediate value into register
@@ -275,7 +207,6 @@ void CPU::step() {
 
         //PUSH
         case PUSH_AF: // 0xF5
-            std::cout << "PUSH AF executed!" << std::endl;
             push(getAF()); 
             break;
         case PUSH_BC: // 0xC5
@@ -391,26 +322,36 @@ void CPU::step() {
                 PC++;
                 uint8_t aValue = getA();        // Store original A
                 uint8_t result = aValue - value;
-                setA(result);
+                setA(result & 0xFF);
                 
                 // Set flags correctly
-                setZeroFlag(result == 0);
+                setZeroFlag((result & 0xFF) == 0);
                 setSubtractFlag(true);
                 setHalfCarryFlag((aValue & 0x0F) < (value & 0x0F)); // Use original A
                 setCarryFlag(aValue < value);                       // Use original A
+                std::cout << "[SUB] A=" << std::hex << (int)aValue
+          << " - " << (int)value
+          << " = " << (int)(result & 0xFF)
+          << " | Z=" << getZeroFlag()
+          << " N=" << getSubtractFlag()
+          << " H=" << getHalfCarryFlag()
+          << " C=" << getCarryFlag()
+          << std::endl;
             }
             break;
             case ADD_A_d8: // 0xC6
             {
-                uint8_t value = readByte(PC);
-                PC++;
-                uint8_t aValue = getA();
-                uint8_t result = aValue + value;
+                uint8_t value = readByte(PC++);
+                uint8_t a = getA();
+                uint16_t result = a + value;
 
-                setA(result);
-                setZeroFlag(result == 0);
-                setHalfCarryFlag((aValue & 0x0F) + (value & 0x0F) > 0x0F);
+                setA(result & 0xFF);
+                setZeroFlag((result & 0xFF) == 0);
                 setSubtractFlag(false);
+                setHalfCarryFlag(((a & 0xF) + (value & 0xF)) > 0xF);
+                setCarryFlag(result > 0xFF);
+                // ADC instruction completed
+
             }
             break;
             case DEC_A: // 0x3D
@@ -588,18 +529,6 @@ void CPU::step() {
                         setSubtractFlag(false);
                         setHalfCarryFlag(false);
                         setCarryFlag(carry);
-                    }
-                    break;
-                    case 0x1F: // RR A
-                    {
-                        uint8_t aValue = getA();
-                        bool oldCarry = getCarryFlag();
-                        bool newCarry = (aValue & 0x01) != 0;
-                        setA(((aValue >> 1) | (oldCarry ? 0x80 : 0)) & 0xFF);
-                        setZeroFlag(getA() == 0);
-                        setSubtractFlag(false);
-                        setHalfCarryFlag(false);
-                        setCarryFlag(newCarry);
                     }
                     break;
                     case 0x27: // SLA A
@@ -1068,13 +997,122 @@ void CPU::step() {
             }
             break;
             
-        default:
-            std::cout << "UNKNOWN OPCODE: 0x" << std::hex << static_cast<int>(opcode) 
-                      << " at PC=0x" << PC-1 
-                      << " A=0x" << static_cast<int>(getA())
-                      << " BC=0x" << getBC()
-                      << " DE=0x" << getDE()
-                      << " HL=0x" << getHL() << std::endl;
+        case 0xB1: // OR C - Bitwise OR between A and C
+            {
+                uint8_t aValue = getA();
+                uint8_t cValue = getC();
+                uint8_t result = aValue | cValue;
+                
+                setA(result);
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(false);
+                setCarryFlag(false);
+            }
+            break;
+            
+        case 0x1F: // RRA - Rotate Right A through carry
+            {
+                uint8_t aValue = getA();
+                bool oldCarry = getCarryFlag();
+                bool newCarry = (aValue & 0x01) != 0;
+                setA(((aValue >> 1) | (oldCarry ? 0x80 : 0)) & 0xFF);
+                setZeroFlag(false); // RRA always clears Z flag
+                setSubtractFlag(false);
+                setHalfCarryFlag(false);
+                setCarryFlag(newCarry);
+            }
+            break;
+            
+        case 0xA9: // XOR C - Bitwise XOR between A and C
+            {
+                uint8_t aValue = getA();
+                uint8_t cValue = getC();
+                uint8_t result = aValue ^ cValue;
+                
+                setA(result);
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(false);
+                setCarryFlag(false);
+            }
+            break;
+            
+        case 0x05: // DEC B - Decrement register B
+            {
+                uint8_t bValue = getB();
+                uint8_t result = bValue - 1;
+                
+                setB(result);
+                setZeroFlag(result == 0);
+                setSubtractFlag(true); // DEC always sets N flag
+                setHalfCarryFlag((bValue & 0x0F) == 0x00); // Set if borrow from bit 4
+                // Carry flag is not affected by DEC
+            }
+            break;
+            
+        case 0x24: // INC H - Increment register H
+            {
+                uint8_t hValue = getH();
+                uint8_t result = hValue + 1;
+                
+                setH(result);
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag((hValue & 0x0F) == 0x0F); // Set if carry from bit 3 to 4
+                // Carry flag is not affected by INC
+            }
+            break;
+            
+        case 0x2C: // INC L - Increment register L
+            {
+                uint8_t lValue = getL();
+                uint8_t result = lValue + 1;
+                
+                setL(result);
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag((lValue & 0x0F) == 0x0F); // Set if carry from bit 3 to 4
+                // Carry flag is not affected by INC
+            }
+            break;
+            
+        case 0xE6: // AND d8 - Bitwise AND between A and immediate value
+            {
+                uint8_t value = readByte(PC);
+                PC++; // Increment PC for 8-bit immediate value
+                uint8_t aValue = getA();
+                uint8_t result = aValue & value;
+                
+                setA(result);
+                setZeroFlag(result == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(true); // AND always sets H flag
+                setCarryFlag(false);
+            }
+            break;
+            
+        case 0xCE: // ADC A, d8 - Add with carry immediate
+            {
+                uint8_t value = readByte(PC);
+                PC++; // Increment PC for 8-bit value
+                uint8_t aValue = getA();
+                uint8_t carry = getCarryFlag() ? 1 : 0;
+                uint16_t result = aValue + value + carry;
+                
+                setA(result & 0xFF);
+                setZeroFlag((result & 0xFF) == 0);
+                setSubtractFlag(false);
+                setHalfCarryFlag(((aValue & 0x0F) + (value & 0x0F) + carry) > 0x0F);
+                setCarryFlag(result > 0xFF);
+            }
+            break;
+            
+        default:{
+            std::cerr << "Unimplemented opcode: 0x" << std::hex 
+            << (int)opcode << " at PC=0x" << (PC-1) << std::endl;
+            std::exit(1); 
+            }
             break;
     }
 }

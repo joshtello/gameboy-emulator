@@ -74,20 +74,7 @@ void PPU::render() {
     // Pokemon Red is loading graphics directly from ROM, not VRAM
     // Let's read from ROM locations where we can see actual tile data
     
-    // Debug: Print VRAM status
-    static int vramDebugCount = 0;
-    if (vramDebugCount < 10) {  // Print first 10 times
-        std::cout << "VRAM 0x8000-0x800F: ";
-        for (int i = 0; i < 16; i++) {
-            printf("%02x ", memory.read(0x8000 + i));
-        }
-        std::cout << " | TileMap 0x9800-0x980F: ";
-        for (int i = 0; i < 16; i++) {
-            printf("%02x ", memory.read(0x9800 + i));
-        }
-        std::cout << std::endl;
-        vramDebugCount++;
-    }
+    // Debug output removed for clean CPU test
     
     // Render a smaller grid using known graphics locations
     // Use the ROM addresses where we know there's actual graphics data

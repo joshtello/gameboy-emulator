@@ -1,64 +1,77 @@
-#include <SDL2/SDL.h>
 #include <iostream>
 #include "memory.h"
 #include "cpu.h"
-#include "ppu.h"
 
 int main(int argc, char* argv[]) {
-    // Create memory, CPU, and PPU
+    // Create memory and CPU only
     Memory memory;
     CPU cpu(memory);
-    PPU ppu(memory); // Pass memory reference to PPU constructor
 
-    // Load the test ROM
+    // Load the Blargg CPU instruction test ROM
     try {
-        memory.loadRom("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb");  // Load Pokemon Red ROM
+        memory.loadRom("cpu_instrs.gb");  // Load Blargg CPU instruction test
     } catch (const std::runtime_error& e) {
         std::cerr << "Failed to load ROM: " << e.what() << std::endl;
         return 1;
     }
 
-    // Initialize CPU and PPU
+    // Initialize CPU only (no graphics for testing)
     cpu.reset();  // Sets PC to 0x100 (ROM entry point)
-    ppu.init();  // Initialize graphics
 
 
+    std::cout << "Starting Blargg CPU instruction test..." << std::endl;
+    std::cout << "Test output will be displayed below:" << std::endl;
+    std::cout << "=====================================" << std::endl;
+    
     bool running = true;
-    while (running) {
-        SDL_Event event;
+    int cycleCount = 0;
+    const int MAX_CYCLES = 10000000; // Increased limit for comprehensive testing
+    
+    std::cout << "Running Blargg test until completion..." << std::endl;
+    
+    while (running && cycleCount < MAX_CYCLES) {
+        // Execute CPU instruction
+        cpu.step();
+        cycleCount++;
         
-        // Wait for events instead of just polling
-        if (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
+        // Check for serial output (Blargg test uses serial port for output)
+        // Serial port is at 0xFF01 (SB) and 0xFF02 (SC)
+        uint8_t sc = memory.read(0xFF02);
+        if (sc & 0x80) { // Transfer enabled
+            uint8_t sb = memory.read(0xFF01);
+            std::cout << static_cast<char>(sb);
+            std::cout.flush();
+            
+            // Reset transfer flag
+            memory.write(0xFF02, sc & 0x7F);
+        }
+        
+        // Check if test has completed by looking for specific patterns
+        // Blargg tests typically end with "Passed" or error messages
+        static std::string output_buffer;
+        if (sc & 0x80) {
+            output_buffer += static_cast<char>(memory.read(0xFF01));
+            if (output_buffer.find("Passed") != std::string::npos || 
+                output_buffer.find("Failed") != std::string::npos ||
+                output_buffer.find("Error") != std::string::npos) {
+                std::cout << std::endl << "Test completed!" << std::endl;
                 running = false;
+                break;
             }
         }
         
-        // TEMPORARY: Skip CPU execution to test PPU with manual VRAM data
-        // cpu.step();
-        
-        // Manually populate VRAM with test data
-        static bool vramInitialized = false;
-        if (!vramInitialized) {
-            // Write some test tile data to VRAM
-            for (int i = 0; i < 16; i++) {
-                memory.write(0x8000 + i, 0xFF); // Solid white tile
-            }
-            for (int i = 0; i < 16; i++) {
-                memory.write(0x8010 + i, 0x00); // Solid black tile
-            }
-            
-            // Write tile map data
-            for (int i = 0; i < 32 * 32; i++) {
-                memory.write(0x9800 + i, (i % 2) ? 1 : 0); // Alternating tiles
-            }
-            
-            vramInitialized = true;
-            std::cout << "VRAM initialized with test data" << std::endl;
+        // Progress indicator
+        if (cycleCount % 100000 == 0) {
+            std::cout << "Cycles: " << cycleCount << std::endl;
         }
-        
-        ppu.render();
     }
+    
+    if (cycleCount >= MAX_CYCLES) {
+        std::cout << std::endl << "Test timed out after " << MAX_CYCLES << " cycles" << std::endl;
+    }
+    
+    std::cout << "=====================================" << std::endl;
+    std::cout << "CPU test completed. Total cycles: " << cycleCount << std::endl;
 
     return 0;
 }
