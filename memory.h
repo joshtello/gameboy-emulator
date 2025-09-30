@@ -21,6 +21,9 @@ private:
     
     // Debug counter for memory accesses
     mutable int debugAccessCount = 0;
+    
+    // Joypad state
+    uint8_t joypadState = 0xFF;  // All buttons released by default
 
     // Memory map regions
     static constexpr uint16_t ROM_BANK_0_START    = 0x0000;  // ROM Bank 0 (16KB)
@@ -197,5 +200,29 @@ public:
 
         //6. Close the file
         rom_file.close(); 
+    }
+    
+    // Joypad methods
+    void pressButton(uint8_t button) {
+        joypadState &= ~(1 << button);  // Clear bit (button pressed)
+    }
+    
+    void releaseButton(uint8_t button) {
+        joypadState |= (1 << button);   // Set bit (button released)
+    }
+    
+    void releaseAllButtons() {
+        joypadState = 0xFF;  // All buttons released
+    }
+    
+    void initializeBIOS() {
+        // Initialize Work RAM and HRAM to 0
+        for (size_t i = 0xC000; i <= 0xDFFF; i++) memory[i] = 0;
+        for (size_t i = 0xFF80; i <= 0xFFFE; i++) memory[i] = 0;
+        
+        // Set up post-BIOS state
+        memory[0xFF40] = 0x91;  // LCDC - LCD enabled, BG enabled
+        std::cout << "BIOS initialized, LCDC=0x" 
+                  << std::hex << (int)memory[0x38] << std::endl;
     }
 }; // End of Memory class
